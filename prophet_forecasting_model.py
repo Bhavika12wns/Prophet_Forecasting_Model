@@ -19,19 +19,13 @@
 import pandas as pd
 from prophet import Prophet
 from sklearn.metrics import mean_absolute_percentage_error, r2_score
-import matplotlib.pyplot as plt
-from openpyxl import Workbook
-from openpyxl.drawing.image import Image
-from openpyxl.utils.dataframe import dataframe_to_rows
-import io
-import os
-
 
 # ### Converting the Data into required form
 
 # In[3]:
 
 
+# Load and preprocess data
 # Load and preprocess data
 def load_and_preprocess(file_path):
     df= pd.read_excel(file_path)
@@ -51,18 +45,18 @@ def load_and_preprocess(file_path):
 
 
 def remove_spikes(df, threshold=5):
-    df1=df.copy()
+    df_cleaned=df.copy()
     spikes_replaced=0
     max_iterations=100
     iteration=0
 
     while iteration < max_iterations:
         iteration+=1
-        mean_full=df1['y'].mean()
-        max_val = df1['y'].max()
-        min_val = df1['y'].min()
-        mean_wo_max = df1[df1['y'] != max_val]['y'].mean()
-        mean_wo_min = df1[df1['y'] != min_val]['y'].mean()
+        mean_full=df_cleaned['y'].mean()
+        max_val = df_cleaned['y'].max()
+        min_val = df_cleaned['y'].min()
+        mean_wo_max = df_cleaned[df_cleaned['y'] != max_val]['y'].mean()
+        mean_wo_min = df_cleaned[df_cleaned['y'] != min_val]['y'].mean()
         diff_max = abs(mean_full-mean_wo_max)/mean_full * 100
         diff_min = abs(mean_full-mean_wo_min)/mean_full * 100
         
@@ -70,15 +64,15 @@ def remove_spikes(df, threshold=5):
             break
 
         if diff_max > diff_min:
-            idx_to_replace = df1[df['y'] == max_val].index[0]
-            df1.at[idx_to_replace, 'y'] = mean_wo_max
+            idx_to_replace = df_cleaned[df_cleaned['y'] == max_val].index[0]
+            df_cleaned.at[idx_to_replace, 'y'] = mean_wo_max
         
         else:
-            idx_to_replace = df1[df['y'] ==min_val].index[0]
-            df1.at[idx_to_replace, 'y'] = mean_wo_min
+            idx_to_replace = df_cleaned[df_cleaned['y'] ==min_val].index[0]
+            df_cleaned.at[idx_to_replace, 'y'] = mean_wo_min
         
         spikes_replaced += 1
-        return df1
+    return df_cleaned
 
 
 # ### Fit the model
@@ -86,9 +80,9 @@ def remove_spikes(df, threshold=5):
 # In[5]:
 
 
-def prophet_forecast_model(df1, forecast_months):
-    df1['cap']=df1['y'].quantile(0.95)
-    df1['floor']=df1['y'].quantile(0.05)
+def prophet_forecast_model(df_cleaned, forecast_months):
+    df_cleaned['cap']=df_cleaned['y'].quantile(0.95)
+    df_cleaned['floor']=df_cleaned['y'].quantile(0.05)
     
     # Initialize and fit the Prophet model on the entire dataset
     model = Prophet(yearly_seasonality = True,
@@ -96,12 +90,12 @@ def prophet_forecast_model(df1, forecast_months):
                    daily_seasonality = False,
                    seasonality_mode='additive',
                    growth='logistic')
-    model.fit(df1)
+    model.fit(df_cleaned)
 
     # Create a future DataFrame for forecasting
     future = model.make_future_dataframe(periods=forecast_months, freq='MS')
-    future['cap']=df1['cap'].iloc[-1]
-    future['floor']=df1['floor'].iloc[-1]
+    future['cap']=df_cleaned['cap'].iloc[-1]
+    future['floor']=df_cleaned['floor'].iloc[-1]
 
     # Predict future sales
     forecast = model.predict(future)
@@ -111,11 +105,11 @@ def prophet_forecast_model(df1, forecast_months):
     forecast_df.columns = ['ds', 'Predicted_Sales']
 
     # Merge actual and predicted sales
-    merged = pd.merge(df1, forecast_df, on='ds', how='left')
+    merged = pd.merge(df_cleaned, forecast_df, on='ds', how='left')
     merged['Type'] = 'Actual'
     
     # Prepare future forecast DataFrame
-    future_forecast = forecast_df[forecast_df['ds'] > df1['ds'].max()].copy()
+    future_forecast = forecast_df[forecast_df['ds'] > df_cleaned['ds'].max()].copy()
     future_forecast['Actual_Sales'] = None
     future_forecast['Type'] = 'Forecast'
     future_forecast = future_forecast[['ds', 'Actual_Sales', 'Predicted_Sales', 'Type']]
@@ -133,12 +127,6 @@ def prophet_forecast_model(df1, forecast_months):
     test_eval = merged.dropna()
     mape_test = mean_absolute_percentage_error(test_eval['Actual_Sales'], test_eval['Predicted_Sales'])
     r2 =r2_score(test_eval['Actual_Sales'], test_eval['Predicted_Sales'])
+    accuracy = 100-(mape_test*100)
 
-    return final_df, r2, mape_test
-
-
-# In[ ]:
-
-
-
-
+    return final_df, r2, mape_test, accuracy
