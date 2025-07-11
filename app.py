@@ -7,10 +7,12 @@
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
+import plotly.express as px
 from prophet_forecasting_model import load_and_preprocess, remove_spikes, prophet_forecast_model
 import io
 from openpyxl import Workbook
 from openpyxl.utils.dataframe import dataframe_to_rows
+from openpyxl.drawing.image import Image as XLImage
 
 
 # In[18]:
