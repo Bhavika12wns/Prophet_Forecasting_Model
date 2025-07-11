@@ -41,10 +41,13 @@ if uploaded_file:
     cleaned_df = remove_spikes(df)
     st.dataframe(cleaned_df)
 
-    forecast_months= st.slider("Select number of Future Months to Forecast", 1,36,12)
+    forecast_months= st.number_input("Enter number of Future Months to Forecast", min_value=1, max_value=36, value=12, step=1)
 
     if st.button("Run Forecast"):
         final_df, r2, mape, accuracy = prophet_forecast_model(cleaned_df, forecast_months)
+
+        final_df['ds_label']=final_df['ds'].dt.strftime('%b %Y')
+        final_df=final_df[['ds', 'Actual_Sales', 'Predicted_Sales', 'Type']]
         
         st.subheader("Forecasted Results")
         st.dataframe(final_df)
@@ -55,25 +58,62 @@ if uploaded_file:
         col2.metric("MAPE (%)", f"{mape*100:.2f}")
         col3.metric("Accuracy (%)", f"{accuracy:.2f}")
 
-        st.subheader("FOrecasted Sales Plot")
+        st.subheader("Interactive Sales Forecast Plot")
+        fig_plotly=px.line(
+            final_df,
+            x='ds',
+            y='Predicted_Sales',
+            color='Type',
+            labels={'ds':'Date', 'Predicted_Sales':'Sales'},
+            title="Forecasted vs Actual Sales"
+        )
+        fig_plotly.add_scatter(
+            x=final_df['ds'],
+            y=final_df['Actual_Sales'],
+            mode='markers',
+            name='Actual Sales',
+            marker=dict(size=6, color='black')
+        )
+        y_max=final_df[['Actual_Sales', 'Predicted_Sales']].max().max()
+        fig_plotly.update_layout(
+            xaxis=dict(
+                tickvals=final_df['ds'],
+                ticktext=final_df['ds'].dt.strftime('%Y-%m'),
+                tickangle=-90), 
+            yaxis_range=[0, y_max*1.1]
+        )
+        st.plotly_chart(fig_plotly, use_container_width=True)
+        
         fig, ax = plt.subplots(figsize=(14,6))
-        for label, grp in final_df.groupby('Type'):
-            if label != 'Forecast':
-                ax.plot(grp['ds'], grp['Actual_Sales'], label=f'{label} Actual')
+        final_df_sorted = final_df.sort_values("ds")
+        for label, grp in final_df_sorted.groupby('Type'):
             ax.plot(grp['ds'], grp['Predicted_Sales'], linestyle='--', label=f'{label} Predicted')
+            if label != 'Forecast':
+                ax.plot(grp['ds'], grp['Actual_Sales'], marker ='o', label=f'{label} Actual')
         ax.set_title("Forecasted Sales using Prophet")
-        ax.set_xlabel("Date")
+        ax.set_xlabel("Month")
         ax.set_ylabel("Sales")
+        ax.set_ylim(0, y_max*1.1)
+        ax.set_xticks(ticks=final_df_sorted['ds'], labels=final_df_sorted['ds'].dt.strftime('%Y-%m'), rotation=90)
         ax.legend()
         ax.grid(True)
-        st.pyplot(fig)
+        plt.tight_layout()
 
+        img_data=io.BytesIO()
+        plt.savefig(img_data, format='png')
+        plt.close()
+        img_data.seek(0)
+        
         output=io.BytesIO()
         wb=Workbook()
         ws=wb.active
         ws.title="Forecast Results"
-        for r in dataframe_to_rows(final_df, index=False, header=True):
+        for r in dataframe_to_rows(final_df[['ds', 'Actual_Sales', 'Predicted_Sales', 'Type']], index=False, header=True):
             ws.append(r)
+        
+        img=XLImage(img_data)
+        ws.add_image(img, "G2")
+        
         wb.save(output)
         output.seek(0)
 
@@ -85,10 +125,3 @@ if uploaded_file:
         )
     
         
-
-
-# In[ ]:
-
-
-
-
