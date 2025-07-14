@@ -96,8 +96,8 @@ if uploaded_file:
         #     if label != 'Forecast':
         #         ax.plot(grp['ds'], grp['Actual_Sales'], marker ='o', label=f'{label} Actual')
 
-        actual= final_df_sorted[final_df_sorted['Type']=='Actual']
-        forecast= final_df_sorted[final_df_sorted['Type']=='Forecast']
+        actual= final_df[final_df['Type']=='Actual']
+        forecast= final_df[final_df['Type']=='Forecast']
         ax.plot(actual['ds'], actual['Actual_Sales'], linestyle='--', color='red', label='Actual Sales')
         ax.plot(actual['ds'], actual['Forecast_Sales'], linestyle='--', color='blue', label='Prediction on Actual Sales')
         ax.plot(forecast['ds'], forecast['Forecast_Sales'], linestyle='--', color='green', label='Forecasted Sales')
