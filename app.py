@@ -69,12 +69,12 @@ if uploaded_file:
             labels={'ds':'Date', 'Predicted_Sales':'Sales'},
             title="Forecasted vs Actual Sales"
         )
-        fig_plotly.add_scatter(
-            x=final_df['ds'],
-            y=final_df['Actual_Sales'],
-            mode='markers',
-            #name='Actual Sales',
-            marker=dict(size=6, color='black')
+        # fig_plotly.add_scatter(
+        #     x=final_df['ds'],
+        #     y=final_df['Actual_Sales'],
+        #     mode='markers',
+        #     #name='Actual Sales',
+        #     marker=dict(size=6, color='black')
         )
         y_max=final_df[['Actual_Sales', 'Predicted_Sales']].max().max()
         fig_plotly.update_layout(
