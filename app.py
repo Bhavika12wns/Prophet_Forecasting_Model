@@ -45,19 +45,6 @@ if uploaded_file:
 
     forecast_months= st.number_input("Enter number of Future Months to Forecast", min_value=1, max_value=36, value=12, step=1)
 
-    if uploaded_file:
-    st.success("File uploaded successfully")
-    
-    df=load_and_preprocess(uploaded_file)
-    st.subheader("Raw Data")
-    st.dataframe(df)
-
-    st.subheader("Cleaned Data after Spikes Removal")
-    cleaned_df = remove_spikes(df)
-    st.dataframe(cleaned_df)
-
-    forecast_months= st.number_input("Enter number of Future Months to Forecast", min_value=1, max_value=36, value=12, step=1)
-
     if st.button("Run Forecast"):
         final_df, r2, mape, accuracy = prophet_forecast_model(cleaned_df, forecast_months)
 
