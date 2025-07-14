@@ -93,10 +93,7 @@ def prophet_forecast_model(df_cleaned, forecast_months):
                    changepoint_range=0.9, 
                    growth='logistic')
     
-    #model.add_seasonality(name='quarterly', period=91.25, fourier_order=8)
-    #model.add_seasonality(name='monthly', period=30.5, fourier_order=5)
-    model.add_seasonality(name='monthly', period=30.5, fourier_order=5)
-
+    model.add_seasonality(name='quarterly', period=91.25, fourier_order=8)
 
     model.fit(df_cleaned)
 
