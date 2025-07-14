@@ -61,6 +61,9 @@ if uploaded_file:
         col3.metric("Accuracy (%)", f"{accuracy:.2f}")
 
         st.subheader("Interactive Sales Forecast Plot")
+        final_df['Type'] = final_df['Type'].replace({
+            'Actual':'Prediction on Actual Sales',
+            'Forecast':'Forecasted Sales'})
         fig_plotly=px.line(
             final_df,
             x='ds',
@@ -71,9 +74,9 @@ if uploaded_file:
         )
         fig_plotly.add_scatter(
             x=final_df['ds'],
-            y=final_df['Predicted_Sales'],
+            y=final_df['Actual_Sales'],
             mode='markers',
-            #name='Prediction on Actual Sales',
+            name='Actual Sales',
             marker=dict(size=6, color='black')
         )
         y_max=final_df[['Actual_Sales', 'Predicted_Sales']].max().max()
@@ -92,13 +95,15 @@ if uploaded_file:
             ax.plot(grp['ds'], grp['Predicted_Sales'], linestyle='--', label=f'{label} Predicted')
             if label != 'Forecast':
                 ax.plot(grp['ds'], grp['Actual_Sales'], marker ='o', label=f'{label} Actual')
+
+       #actual= final_df_sorted
         ax.set_title("Forecasted Sales using Prophet")
         ax.set_xlabel("Month")
         ax.set_ylabel("Sales")
         ax.set_ylim(0, y_max*1.1)
         ax.set_xticks(ticks=final_df_sorted['ds'], labels=final_df_sorted['ds'].dt.strftime('%Y-%m'), rotation=90)
         ax.legend()
-        ax.grid(False)
+        ax.grid(True)
         plt.tight_layout()
 
         img_data=io.BytesIO()
