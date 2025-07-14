@@ -73,7 +73,7 @@ if uploaded_file:
             x=final_df['ds'],
             y=final_df['Actual_Sales'],
             mode='markers',
-            name='Actual Sales',
+            #name='Actual Sales',
             marker=dict(size=6, color='black')
         )
         y_max=final_df[['Actual_Sales', 'Predicted_Sales']].max().max()
