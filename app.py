@@ -96,7 +96,7 @@ if uploaded_file:
         for label, grp in final_df_sorted.groupby('Type'):
             ax.plot(grp['ds'], grp['Predicted_Sales'], linestyle='--', label=f'{label}')
             if label != 'Forecast':
-                ax.plot(grp['ds'], grp['Actual_Sales'], marker ='o', label='Actual_Sales')
+                ax.plot(grp['ds'], grp['Actual_Sales'], marker ='o', label='_nolegend_')
         ax.set_title("Forecasted Sales using Prophet")
         ax.set_xlabel("Month")
         ax.set_ylabel("Sales")
