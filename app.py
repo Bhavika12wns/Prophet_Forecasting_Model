@@ -89,7 +89,7 @@ if uploaded_file:
         )
         st.plotly_chart(fig_plotly, use_container_width=True)
 
-        fig, ax = plt.subplots(figsize=(14,6))
+        fig, ax = plt.subplots(figsize=(20,8))
         final_df_sorted = final_df.sort_values("ds")
         actual= final_df_sorted[final_df_sorted['Type']=='Actual']
         forecast= final_df_sorted[final_df_sorted['Type']=='Forecast']
