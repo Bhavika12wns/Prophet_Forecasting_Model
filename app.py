@@ -94,9 +94,9 @@ if uploaded_file:
         fig, ax = plt.subplots(figsize=(14,6))
         final_df_sorted = final_df.sort_values("ds")
         for label, grp in final_df_sorted.groupby('Type'):
-            ax.plot(grp['ds'], grp['Predicted_Sales'], linestyle='--', label=f'{label} Predicted')
+            ax.plot(grp['ds'], grp['Predicted_Sales'], linestyle='--', label=f'{label}')
             if label != 'Forecast':
-                ax.plot(grp['ds'], grp['Actual_Sales'], marker ='o', label=f'{label} Actual')
+                ax.plot(grp['ds'], grp['Actual_Sales'], marker ='o', label=f'{label}')
         ax.set_title("Forecasted Sales using Prophet")
         ax.set_xlabel("Month")
         ax.set_ylabel("Sales")
