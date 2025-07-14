@@ -75,7 +75,7 @@ if uploaded_file:
         #     mode='markers',
         #     #name='Actual Sales',
         #     marker=dict(size=6, color='black')
-        )
+        # )
         y_max=final_df[['Actual_Sales', 'Predicted_Sales']].max().max()
         fig_plotly.update_layout(
             xaxis=dict(
