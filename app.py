@@ -10,12 +10,33 @@ import matplotlib.pyplot as plt
 import plotly.express as px
 from prophet_forecasting_model import load_and_preprocess, remove_spikes, prophet_forecast_model
 import io
+import openpyxl
 from openpyxl import Workbook
 from openpyxl.utils.dataframe import dataframe_to_rows
 from openpyxl.drawing.image import Image as XLImage
 
 
 # In[18]:
+
+template_df = pd.Dataframe({
+    "month": ["Jan22", "Feb22", "Mar22"],
+    "sales": [1234,12344,12343]
+})
+
+st.markdown("### Download Template File")
+buffer = io.BytesIO()
+with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
+    template_df.to_excel(writer, index=False, sheet_name='Template')
+    writer.save()
+buffer.seek(0)
+
+st.download_button(
+    label="Download Excel File of the Data Template",
+    data=buffer,
+    file_name="Sales_forecast_template.xlsx",
+    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+)
+
 
 
 st.set_page_config(page_title="Sales Forecast", layout="wide")
