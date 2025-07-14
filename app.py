@@ -90,13 +90,29 @@ if uploaded_file:
             yaxis_range=[0, y_max*1.1]
         )
         st.plotly_chart(fig_plotly, use_container_width=True)
+
         
         fig, ax = plt.subplots(figsize=(14,6))
         final_df_sorted = final_df.sort_values("ds")
+
+        # Plot Actual Sales once (red line with legend)
+        actual = final_df_sorted[final_df_sorted['Type'] == 'Actual']
+        ax.plot(actual['ds'], actual['Actual_Sales'], linestyle='--', color='red', label='Actual Sales')
+
+        # Plot the rest inside the loop
         for label, grp in final_df_sorted.groupby('Type'):
-            ax.plot(grp['ds'], grp['Predicted_Sales'], linestyle='--', label=f'{label}')
-            if label != 'Forecast':
-                ax.plot(grp['ds'], grp['Actual_Sales'], marker ='o', label='_nolegend_')
+            ax.plot(grp['ds'], grp['Predicted_Sales'], linestyle='--', label=f'{label}')
+            # Plot Actual Sales again but without legend
+            if label != 'Forecast':
+                ax.plot(grp['ds'], grp['Actual_Sales'], marker='o', label='_nolegend_')  # No legend for this
+
+        
+        # fig, ax = plt.subplots(figsize=(14,6))
+        # final_df_sorted = final_df.sort_values("ds")
+        # for label, grp in final_df_sorted.groupby('Type'):
+        #     ax.plot(grp['ds'], grp['Predicted_Sales'], linestyle='--', label=f'{label}')
+        #     if label != 'Forecast':
+        #         ax.plot(grp['ds'], grp['Actual_Sales'], marker ='o', label='_nolegend_')
         ax.set_title("Forecasted Sales using Prophet")
         ax.set_xlabel("Month")
         ax.set_ylabel("Sales")
