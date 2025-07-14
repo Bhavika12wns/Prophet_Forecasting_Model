@@ -111,7 +111,7 @@ if uploaded_file:
         ax.set_ylabel("Sales")
         ax.set_ylim(0, final_df_sorted[['Actual_Sales', 'Predicted_Sales']].max().max()*1.1)
         ax.set_xticks(ticks=final_df_sorted['ds'])
-        ax.set_xtickslabels(final_df_sorted['ds'].dt.strftime('%Y-%m'), rotation=90)
+        ax.set_xticklabels(final_df_sorted['ds'].dt.strftime('%Y-%m'), rotation=90)
         ax.legend()
         ax.grid(True)
         plt.tight_layout()
