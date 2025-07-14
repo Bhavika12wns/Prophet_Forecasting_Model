@@ -69,13 +69,13 @@ if uploaded_file:
             labels={'ds':'Date', 'Predicted_Sales':'Sales'},
             title="Forecasted vs Actual Sales"
         )
-        # fig_plotly.add_scatter(
-        #     x=final_df['ds'],
-        #     y=final_df['Actual_Sales'],
-        #     mode='markers',
-        #     #name='Actual Sales',
-        #     marker=dict(size=6, color='black')
-        # )
+        fig_plotly.add_scatter(
+            x=final_df['ds'],
+            y=final_df['Predicted_Sales'],
+            mode='markers',
+            #name='Prediction on Actual Sales',
+            marker=dict(size=6, color='black')
+        )
         y_max=final_df[['Actual_Sales', 'Predicted_Sales']].max().max()
         fig_plotly.update_layout(
             xaxis=dict(
@@ -98,7 +98,7 @@ if uploaded_file:
         ax.set_ylim(0, y_max*1.1)
         ax.set_xticks(ticks=final_df_sorted['ds'], labels=final_df_sorted['ds'].dt.strftime('%Y-%m'), rotation=90)
         ax.legend()
-        ax.grid(True)
+        ax.grid(False)
         plt.tight_layout()
 
         img_data=io.BytesIO()
