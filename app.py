@@ -88,36 +88,24 @@ if uploaded_file:
             yaxis_range=[0, y_max*1.1]
         )
         st.plotly_chart(fig_plotly, use_container_width=True)
-
-        fig, ax = plt.subplots(figsize=(28,8))
+        
+        fig, ax = plt.subplots(figsize=(14,6))
         final_df_sorted = final_df.sort_values("ds")
-        actual= final_df_sorted[final_df_sorted['Type']=='Actual']
-        forecast= final_df_sorted[final_df_sorted['Type']=='Forecast']
-        ax.plot(actual['ds'], actual['Actual_Sales'], linestyle='--', color='red', label='Actual Sales')
-        ax.plot(actual['ds'], actual['Predicted_Sales'], linestyle='--', color='blue', label='Prediction on Actual Sales')
-        ax.plot(forecast['ds'], forecast['Predicted_Sales'], linestyle='--', color='green', label='Forecasted Sales')
-        
-        
-        # fig, ax = plt.subplots(figsize=(14,6))
-        # final_df_sorted = final_df.sort_values("ds")
-        # for label, grp in final_df_sorted.groupby('Type'):
-        #     ax.plot(grp['ds'], grp['Predicted_Sales'], linestyle='--', label=f'{label}')
-        #     if label != 'Forecast':
-        #         ax.plot(grp['ds'], grp['Actual_Sales'], marker ='o', label=f'{label}')
-
-        
+        for label, grp in final_df_sorted.groupby('Type'):
+            ax.plot(grp['ds'], grp['Predicted_Sales'], linestyle='--', label=f'{label} Predicted')
+            if label != 'Forecast':
+                ax.plot(grp['ds'], grp['Actual_Sales'], marker ='o', label=f'{label} Actual')
         ax.set_title("Forecasted Sales using Prophet")
         ax.set_xlabel("Month")
         ax.set_ylabel("Sales")
-        ax.set_ylim(0, final_df_sorted[['Actual_Sales', 'Predicted_Sales']].max().max()*1.1)
-        ax.set_xticks(ticks=final_df_sorted['ds'])
-        ax.set_xticklabels(final_df_sorted['ds'].dt.strftime('%Y-%m'), rotation=90)
+        ax.set_ylim(0, y_max*1.1)
+        ax.set_xticks(ticks=final_df_sorted['ds'], labels=final_df_sorted['ds'].dt.strftime('%Y-%m'), rotation=90)
         ax.legend()
         ax.grid(True)
         plt.tight_layout()
 
         img_data=io.BytesIO()
-        plt.savefig(img_data, format='png', dpi=300)
+        plt.savefig(img_data, format='png')
         plt.close()
         img_data.seek(0)
         
