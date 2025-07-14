@@ -90,7 +90,7 @@ if uploaded_file:
         st.plotly_chart(fig_plotly, use_container_width=True)
         
         # fig, ax = plt.subplots(figsize=(14,6))
-         final_df_sorted = final_df.sort_values("ds")
+          final_df_sorted = final_df.sort_values("ds")
         # for label, grp in final_df_sorted.groupby('Type'):
         #     ax.plot(grp['ds'], grp['Predicted_Sales'], linestyle='--', label=f'{label} Predicted')
         #     if label != 'Forecast':
