@@ -94,8 +94,8 @@ if uploaded_file:
         actual= final_df_sorted[final_df_sorted['Type']=='Actual']
         forecast= final_df_sorted[final_df_sorted['Type']=='Forecast']
         ax.plot(actual['ds'], actual['Actual_Sales'], linestyle='--', color='red', label='Actual Sales')
-        ax.plot(actual['ds'], actual['Forecast_Sales'], linestyle='--', color='blue', label='Prediction on Actual Sales')
-        ax.plot(forecast['ds'], forecast['Forecast_Sales'], linestyle='--', color='green', label='Forecasted Sales')
+        ax.plot(actual['ds'], actual['Predicted_Sales'], linestyle='--', color='blue', label='Prediction on Actual Sales')
+        ax.plot(forecast['ds'], forecast['Predicted_Sales'], linestyle='--', color='green', label='Forecasted Sales')
         
         
         # fig, ax = plt.subplots(figsize=(14,6))
