@@ -18,7 +18,7 @@ from openpyxl.drawing.image import Image as XLImage
 
 # In[18]:
 
-template_df = pd.Dataframe({
+template_df = pd.DataFrame({
     "month": ["Jan22", "Feb22", "Mar22"],
     "sales": [1234,12344,12343]
 })
