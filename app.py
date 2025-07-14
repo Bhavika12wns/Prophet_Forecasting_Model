@@ -113,6 +113,7 @@ if uploaded_file:
         #     ax.plot(grp['ds'], grp['Predicted_Sales'], linestyle='--', label=f'{label}')
         #     if label != 'Forecast':
         #         ax.plot(grp['ds'], grp['Actual_Sales'], marker ='o', label='_nolegend_')
+
         ax.set_title("Forecasted Sales using Prophet")
         ax.set_xlabel("Month")
         ax.set_ylabel("Sales")
