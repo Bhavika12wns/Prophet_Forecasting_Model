@@ -89,6 +89,7 @@ def prophet_forecast_model(df_cleaned, forecast_months):
                    weekly_seasonality = False,
                    daily_seasonality = False,
                    seasonality_mode='additive',
+                   changepoint_prior_scale=0.1, 
                    growth='logistic')
     model.fit(df_cleaned)
 
