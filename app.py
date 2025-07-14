@@ -101,10 +101,9 @@ if uploaded_file:
 
         # Plot the rest inside the loop
         for label, grp in final_df_sorted.groupby('Type'):
-            ax.plot(grp['ds'], grp['Predicted_Sales'], linestyle='--', label=f'{label}')
-            # Plot Actual Sales again but without legend
-            if label != 'Forecast':
-                ax.plot(grp['ds'], grp['Actual_Sales'], marker='o', label='_nolegend_')  # No legend for this
+            ax.plot(grp['ds'], grp['Predicted_Sales'], linestyle='--', label=f'{label}')
+            if label != 'Forecast':
+                ax.plot(grp['ds'], grp['Actual_Sales'], marker='o', label='_nolegend_')  # No legend for this
 
         
         # fig, ax = plt.subplots(figsize=(14,6))
