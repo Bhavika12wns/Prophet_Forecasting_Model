@@ -82,7 +82,6 @@ if uploaded_file:
         col3.metric("Accuracy (%)", f"{accuracy:.2f}")
 
         st.subheader("Interactive Sales Forecast Plot")
-        st.subheader("Interactive Sales Forecast Plot")
         final_df['Type'] = final_df['Type'].replace({
             'Actual':'Prediction on Actual Sales',
             'Forecast':'Forecasted Sales'})
