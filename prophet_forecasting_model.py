@@ -82,54 +82,91 @@ def remove_spikes(df, threshold=5):
 # In[5]:
 
 
-def objective(trial, df_cleaned):
-    # Define hyperparameters to optimize
-    changepoint_prior_scale = trial.suggest_loguniform('changepoint_prior_scale', 0.01, 0.5)
-    seasonality_mode = trial.suggest_categorical('seasonality_mode', ['additive', 'multiplicative'])
-    yearly_seasonality = trial.suggest_categorical('yearly_seasonality', [True, False])
+def grid_search_optimization(df_cleaned):
+    param_grid = {
+        'changepoint_prior_scale': [0.01, 0.1, 0.5],
+        'seasonality_mode': ['additive', 'multiplicative'],
+        'yearly_seasonality': [True, False]
+    }
 
-    # Initialize and fit the Prophet model
-    model = Prophet(
-        yearly_seasonality=yearly_seasonality,
-        weekly_seasonality=False,
-        daily_seasonality=False,
-        seasonality_mode=seasonality_mode,
-        changepoint_prior_scale=changepoint_prior_scale,
-        changepoint_range=0.9,
-        growth='logistic'
-    )
-    model.add_seasonality(name='quarterly', period=91.25, fourier_order=8)
-    model.fit(df_cleaned)
+    best_score = float('inf')
+    best_params = None
 
-    # Create a future DataFrame for forecasting
-    future = model.make_future_dataframe(periods=12, freq='MS')
-    future['cap'] = df_cleaned['cap'].iloc[-1]
-    future['floor'] = df_cleaned['floor'].iloc[-1]
+    for params in ParameterGrid(param_grid):
+        model = Prophet(
+            yearly_seasonality=params['yearly_seasonality'],
+            weekly_seasonality=False,
+            daily_seasonality=False,
+            seasonality_mode=params['seasonality_mode'],
+            changepoint_prior_scale=params['changepoint_prior_scale'],
+            changepoint_range=0.9,
+            growth='logistic'
+        )
+        model.add_seasonality(name='quarterly', period=91.25, fourier_order=8)
+        model.fit(df_cleaned)
 
-    # Predict future sales
-    forecast = model.predict(future)
+        future = model.make_future_dataframe(periods=12, freq='MS')
+        future['cap'] = df_cleaned['cap'].iloc[-1]
+        future['floor'] = df_cleaned['floor'].iloc[-1]
 
-    # Evaluate model
-    forecast_df = forecast[['ds', 'yhat']].copy()
-    forecast_df.columns = ['ds', 'Predicted_Sales']
-    merged = pd.merge(df_cleaned, forecast_df, on='ds', how='left')
-    test_eval = merged.dropna()
-    mape_test = mean_absolute_percentage_error(test_eval['y'], test_eval['Predicted_Sales'])
+        forecast = model.predict(future)
+        forecast_df = forecast[['ds', 'yhat']].copy()
+        forecast_df.columns = ['ds', 'Predicted_Sales']
+        merged = pd.merge(df_cleaned, forecast_df, on='ds', how='left')
+        test_eval = merged.dropna()
+        mape_test = mean_absolute_percentage_error(test_eval['y'], test_eval['Predicted_Sales'])
 
-    return mape_test
+        if mape_test < best_score:
+            best_score = mape_test
+            best_params = params
 
-def prophet_forecast_model(df_cleaned, forecast_months):
+    return best_params
+
+def optuna_optimization(df_cleaned):
+    def objective(trial):
+        changepoint_prior_scale = trial.suggest_loguniform('changepoint_prior_scale', 0.01, 0.5)
+        seasonality_mode = trial.suggest_categorical('seasonality_mode', ['additive', 'multiplicative'])
+        yearly_seasonality = trial.suggest_categorical('yearly_seasonality', [True, False])
+
+        model = Prophet(
+            yearly_seasonality=yearly_seasonality,
+            weekly_seasonality=False,
+            daily_seasonality=False,
+            seasonality_mode=seasonality_mode,
+            changepoint_prior_scale=changepoint_prior_scale,
+            changepoint_range=0.9,
+            growth='logistic'
+        )
+        model.add_seasonality(name='quarterly', period=91.25, fourier_order=8)
+        model.fit(df_cleaned)
+
+        future = model.make_future_dataframe(periods=12, freq='MS')
+        future['cap'] = df_cleaned['cap'].iloc[-1]
+        future['floor'] = df_cleaned['floor'].iloc[-1]
+
+        forecast = model.predict(future)
+        forecast_df = forecast[['ds', 'yhat']].copy()
+        forecast_df.columns = ['ds', 'Predicted_Sales']
+        merged = pd.merge(df_cleaned, forecast_df, on='ds', how='left')
+        test_eval = merged.dropna()
+        mape_test = mean_absolute_percentage_error(test_eval['y'], test_eval['Predicted_Sales'])
+
+        return mape_test
+
+    study = optuna.create_study(direction='minimize')
+    study.optimize(objective, n_trials=50)
+
+    return study.best_params
+
+def prophet_forecast_model(df_cleaned, forecast_months, optimizer='optuna'):
     df_cleaned['cap'] = df_cleaned['y'].quantile(0.95)
     df_cleaned['floor'] = df_cleaned['y'].quantile(0.05)
 
-    # Optimize hyperparameters using Optuna
-    study = optuna.create_study(direction='minimize')
-    study.optimize(lambda trial: objective(trial, df_cleaned), n_trials=50)
+    if optimizer == 'grid_search':
+        best_params = grid_search_optimization(df_cleaned)
+    else:
+        best_params = optuna_optimization(df_cleaned)
 
-    best_params = study.best_params
-    print(f"Best parameters: {best_params}")
-
-    # Use the best model for final prediction
     model = Prophet(
         yearly_seasonality=best_params['yearly_seasonality'],
         weekly_seasonality=False,
@@ -147,25 +184,20 @@ def prophet_forecast_model(df_cleaned, forecast_months):
     future['floor'] = df_cleaned['floor'].iloc[-1]
     forecast = model.predict(future)
 
-    # Prepare the forecast DataFrame
     forecast_df = forecast[['ds', 'yhat']].copy()
     forecast_df.columns = ['ds', 'Predicted_Sales']
 
-    # Merge actual and predicted sales
     merged = pd.merge(df_cleaned, forecast_df, on='ds', how='left')
     merged['Type'] = 'Actual'
 
-    # Prepare future forecast DataFrame
     future_forecast = forecast_df[forecast_df['ds'] > df_cleaned['ds'].max()].copy()
     future_forecast['Actual_Sales'] = None
     future_forecast['Type'] = 'Forecast'
     future_forecast = future_forecast[['ds', 'Actual_Sales', 'Predicted_Sales', 'Type']]
 
-    # Rename and select columns for the final DataFrame
     merged.rename(columns={'y': 'Actual_Sales'}, inplace=True)
     merged = merged[['ds', 'Actual_Sales', 'Predicted_Sales', 'Type']]
 
-    # Concatenate the merged and future forecast DataFrames
     final_df = pd.concat([merged, future_forecast], ignore_index=True)
 
     final_df['MAPE'] = final_df.apply(
