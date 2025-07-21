@@ -103,7 +103,7 @@ def grid_search_optimization(df_cleaned):
             changepoint_range=params['changepoint_range'],
             growth='logistic'
         )
-        model.add_seasonality(name='quarterly', period=91.25, fourier_order=8)
+        #model.add_seasonality(name='quarterly', period=91.25, fourier_order=8)
         model.fit(df_cleaned)
 
         future = model.make_future_dataframe(periods=12, freq='MS')
@@ -139,7 +139,7 @@ def optuna_optimization(df_cleaned):
             changepoint_range=changepoint_range,
             growth='logistic'
         )
-        model.add_seasonality(name='quarterly', period=91.25, fourier_order=8)
+        #model.add_seasonality(name='quarterly', period=91.25, fourier_order=8)
         model.fit(df_cleaned)
 
         future = model.make_future_dataframe(periods=12, freq='MS')
@@ -187,7 +187,7 @@ def prophet_forecast_model(df_cleaned, forecast_months):
         changepoint_range=best_params['changepoint_range'],
         growth='logistic'
     )
-    model.add_seasonality(name='quarterly', period=91.25, fourier_order=8)
+    #model.add_seasonality(name='quarterly', period=91.25, fourier_order=8)
     model.fit(df_cleaned)
 
     future = model.make_future_dataframe(periods=forecast_months, freq='MS')
