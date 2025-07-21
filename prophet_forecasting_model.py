@@ -19,6 +19,7 @@
 import pandas as pd
 from prophet import Prophet
 from sklearn.metrics import mean_absolute_percentage_error, r2_score
+import optuna
 
 # ### Converting the Data into required form
 
@@ -80,27 +81,58 @@ def remove_spikes(df, threshold=5):
 # In[5]:
 
 
-def prophet_forecast_model(df_cleaned, forecast_months):
-    df_cleaned['cap']=df_cleaned['y'].quantile(0.95)
-    df_cleaned['floor']=df_cleaned['y'].quantile(0.05)
+def objective(trial, df_cleaned):
+    seasonality_mode = trial.suggest_categorical('seasonality_mode', ['additive', 'multiplicative'])
+    changepoint_prior_scale = trial.suggest_loguniform('changepoint_prior_scale', 0.01, 0.5)
+    changepoint_range = trial.suggest_uniform('changepoint_range', 0.8, 0.9)
     
-    # Initialize and fit the Prophet model on the entire dataset
-    model = Prophet(yearly_seasonality = True,
-                   weekly_seasonality = False,
-                   daily_seasonality = False,
-                   seasonality_mode='additive',
-                   changepoint_prior_scale=0.1, 
-                   changepoint_range=0.9, 
-                   growth='logistic')
+    model = Prophet(
+        yearly_seasonality=True,
+        weekly_seasonality=False,
+        daily_seasonality=False,
+        seasonality_mode=seasonality_mode,
+        changepoint_prior_scale=changepoint_prior_scale,
+        changepoint_range=changepoint_range,
+        growth='logistic'
+    )
+    model.add_seasonality(name='quarterly', period=91.25, fourier_order=8)
+    model.fit(df_cleaned)
     
+    future = model.make_future_dataframe(periods=12, freq='MS')
+    future['cap'] = df_cleaned['cap'].iloc[-1]
+    future['floor'] = df_cleaned['floor'].iloc[-1]
+    
+    forecast = model.predict(future)
+    forecast_df = forecast[['ds', 'yhat']].copy()
+    forecast_df.columns = ['ds', 'Predicted_Sales']
+    
+    merged = pd.merge(df_cleaned, forecast_df, on='ds', how='left')
+    mape = mean_absolute_percentage_error(merged['y'], merged['Predicted_Sales'])
+    
+    return mape
+
+def prophet_forecast_model(df_cleaned, forecast_months, best_params):
+    df_cleaned['cap'] = df_cleaned['y'].quantile(0.95)
+    df_cleaned['floor'] = df_cleaned['y'].quantile(0.05)
+    
+    # Initialize and fit the Prophet model with the best parameters
+    model = Prophet(
+        yearly_seasonality=True,
+        weekly_seasonality=False,
+        daily_seasonality=False,
+        seasonality_mode=best_params['seasonality_mode'],
+        changepoint_prior_scale=best_params['changepoint_prior_scale'],
+        changepoint_range=best_params['changepoint_range'],
+        growth='logistic'
+    )
     model.add_seasonality(name='quarterly', period=91.25, fourier_order=8)
 
     model.fit(df_cleaned)
 
     # Create a future DataFrame for forecasting
     future = model.make_future_dataframe(periods=forecast_months, freq='MS')
-    future['cap']=df_cleaned['cap'].iloc[-1]
-    future['floor']=df_cleaned['floor'].iloc[-1]
+    future['cap'] = df_cleaned['cap'].iloc[-1]
+    future['floor'] = df_cleaned['floor'].iloc[-1]
 
     # Predict future sales
     forecast = model.predict(future)
@@ -121,17 +153,15 @@ def prophet_forecast_model(df_cleaned, forecast_months):
 
     # Rename and select columns for the final DataFrame
     merged.rename(columns={'y': 'Actual_Sales'}, inplace=True)
-    merged = merged[['ds', 'Actual_Sales', 'Predicted_Sales', 'Type']]
-
-    # Concatenate the merged and future forecast DataFrames
+    merged = merged[['ds', 'Actual_Sales', 'Predicted_Sales', 'Type']]# Concatenate the merged and future forecast DataFrames
     final_df = pd.concat([merged, future_forecast], ignore_index=True)
     
-    final_df['MAPE']=final_df.apply(
-        lambda row: 100*abs(row['Actual_Sales'] - row['Predicted_Sales'])/row['Actual_Sales']
+    final_df['MAPE'] = final_df.apply(
+        lambda row: 100 * abs(row['Actual_Sales'] - row['Predicted_Sales']) / row['Actual_Sales']
         if pd.notnull(row['Actual_Sales']) and pd.notnull(row['Predicted_Sales']) else None, axis=1)
     test_eval = merged.dropna()
     mape_test = mean_absolute_percentage_error(test_eval['Actual_Sales'], test_eval['Predicted_Sales'])
-    r2 =r2_score(test_eval['Actual_Sales'], test_eval['Predicted_Sales'])
-    accuracy = 100-(mape_test*100)
+    r2 = r2_score(test_eval['Actual_Sales'], test_eval['Predicted_Sales'])
+    accuracy = 100 - (mape_test * 100)
 
     return final_df, r2, mape_test, accuracy
