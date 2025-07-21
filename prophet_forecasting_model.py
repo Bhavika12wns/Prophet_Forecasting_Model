@@ -89,8 +89,7 @@ def grid_search_optimization(df_cleaned):
         'yearly_seasonality': [True, False],
         'weekly_seasonality': [True, False],
         'holidays_prior_scale': [0.01, 0.1, 1.0],
-        'changepoint_range': [0.8, 0.9, 1.0],
-        'growth': ['logistic', 'linear']
+        'changepoint_range': [0.8, 0.9, 1.0]
     }
 
     best_score = float('inf')
@@ -105,7 +104,7 @@ def grid_search_optimization(df_cleaned):
             changepoint_prior_scale=params['changepoint_prior_scale'],
             holidays_prior_scale=params['holidays_prior_scale'],
             changepoint_range=params['changepoint_range'],
-            growth=params['growth']
+            growth='logistic'
         )
         model.add_seasonality(name='quarterly', period=91.25, fourier_order=8)
         model.fit(df_cleaned)
@@ -135,7 +134,6 @@ def optuna_optimization(df_cleaned):
         weekly_seasonality = trial.suggest_categorical('weekly_seasonality', [True, False])
         holidays_prior_scale = trial.suggest_loguniform('holidays_prior_scale', 0.01, 1.0)
         changepoint_range = trial.suggest_uniform('changepoint_range', 0.8, 1.0)
-        growth = trial.suggest_categorical('growth', ['logistic', 'linear'])
 
         model = Prophet(
             yearly_seasonality=yearly_seasonality,
@@ -145,7 +143,7 @@ def optuna_optimization(df_cleaned):
             changepoint_prior_scale=changepoint_prior_scale,
             holidays_prior_scale=holidays_prior_scale,
             changepoint_range=changepoint_range,
-            growth=growth
+            growth='logistic'
         )
         model.add_seasonality(name='quarterly', period=91.25, fourier_order=8)
         model.fit(df_cleaned)
@@ -177,10 +175,9 @@ def choose_optimizer(df_cleaned):
 
 def prophet_forecast_model(df_cleaned, forecast_months):
     # Set capacity values
-    cap_value = df_cleaned['y'].max() * 1.1  # Example: 10% above the max value
+    cap_value = df_cleaned['y'].max() * 1.1  
     df_cleaned['cap'] = cap_value
-    df_cleaned['floor'] = df_cleaned['y'].min() * 0.9  # Example: 10% below the min value
-
+    df_cleaned['floor'] = df_cleaned['y'].min() * 0.9 
     optimizer = choose_optimizer(df_cleaned)
 
     if optimizer == 'grid_search':
@@ -194,9 +191,8 @@ def prophet_forecast_model(df_cleaned, forecast_months):
         daily_seasonality=False,
         seasonality_mode=best_params['seasonality_mode'],
         changepoint_prior_scale=best_params['changepoint_prior_scale'],
-        holidays_prior_scale=best_params['holidays_prior_scale'],
         changepoint_range=best_params['changepoint_range'],
-        growth=best_params['growth']
+        growth='logistic'
     )
     model.add_seasonality(name='quarterly', period=91.25, fourier_order=8)
     model.fit(df_cleaned)
