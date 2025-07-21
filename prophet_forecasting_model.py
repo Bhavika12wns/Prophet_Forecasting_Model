@@ -158,9 +158,18 @@ def optuna_optimization(df_cleaned):
 
     return study.best_params
 
-def prophet_forecast_model(df_cleaned, forecast_months, optimizer='optuna'):
+def choose_optimizer(df_cleaned):
+    # Example decision logic based on dataset size
+    if len(df_cleaned) < 50:
+        return 'grid_search'
+    else:
+        return 'optuna'
+
+def prophet_forecast_model(df_cleaned, forecast_months):
     df_cleaned['cap'] = df_cleaned['y'].quantile(0.95)
     df_cleaned['floor'] = df_cleaned['y'].quantile(0.05)
+
+    optimizer = choose_optimizer(df_cleaned)
 
     if optimizer == 'grid_search':
         best_params = grid_search_optimization(df_cleaned)
