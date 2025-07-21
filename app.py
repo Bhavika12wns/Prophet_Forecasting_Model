@@ -27,7 +27,6 @@ st.markdown("### Download Template File")
 buffer = io.BytesIO()
 with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
     template_df.to_excel(writer, index=False, sheet_name='Template')
-    #writer.save()
 buffer.seek(0)
 
 st.download_button(
@@ -36,8 +35,6 @@ st.download_button(
     file_name="Sales_forecast_template.xlsx",
     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 )
-
-
 
 st.set_page_config(page_title="Sales Forecast", layout="wide")
 st.title("Sales Forecast App")
@@ -117,7 +114,7 @@ if uploaded_file:
             yaxis_range=[0, y_max * 1.1]
         )
         st.plotly_chart(fig_plotly, use_container_width=True)
-
+        
         # Matplotlib plot
         fig, ax = plt.subplots(figsize=(14, 6))
         final_df_sorted = final_df.sort_values("ds")
