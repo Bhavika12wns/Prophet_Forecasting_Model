@@ -66,21 +66,41 @@ if uploaded_file:
 
     forecast_months = st.number_input("Enter number of Future Months to Forecast", min_value=1, max_value=36, value=12, step=1)
 
+    if uploaded_file:
+    st.success("File uploaded successfully")
+
+    # Load and preprocess data
+    df = load_and_preprocess(uploaded_file)
+    st.subheader("Raw Data")
+    st.dataframe(df)
+
+    # Remove spikes from data
+    st.subheader("Cleaned Data after Spikes Removal")
+    cleaned_df = remove_spikes(df)
+    st.dataframe(cleaned_df)
+
+    # Forecast months input
+    forecast_months = st.number_input("Enter number of Future Months to Forecast", min_value=1, max_value=36, value=12, step=1)
+
+    # Run forecast button
     if st.button("Run Forecast"):
         final_df, r2, mape, accuracy = prophet_forecast_model(cleaned_df, forecast_months)
 
         final_df['ds_label'] = final_df['ds'].dt.strftime('%b %Y')
         final_df = final_df[['ds', 'Actual_Sales', 'Predicted_Sales', 'Type']]
 
+        # Display forecasted results
         st.subheader("Forecasted Results")
         st.dataframe(final_df)
 
+        # Display model accuracy metrics
         st.subheader("Model Accuracy Metrics")
         col1, col2, col3 = st.columns(3)
         col1.metric("R2Score", f"{r2:.4f}")
         col2.metric("MAPE (%)", f"{mape * 100:.2f}")
         col3.metric("Accuracy (%)", f"{accuracy:.2f}")
 
+        # Interactive sales forecast plot
         st.subheader("Interactive Sales Forecast Plot")
         final_df['Type'] = final_df['Type'].replace({
             'Actual': 'Prediction on Actual Sales',
