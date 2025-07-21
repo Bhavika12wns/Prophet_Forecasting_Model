@@ -67,15 +67,13 @@ if uploaded_file:
     forecast_months = st.number_input("Enter number of Future Months to Forecast", min_value=1, max_value=36, value=12, step=1)
 
     if st.button("Run Forecast"):
-        # Create a study and optimize
-        study = optuna.create_study(direction='minimize')
-        study.optimize(lambda trial: objective(trial, cleaned_df), n_trials=50)
-        best_params = study.best_params
-        st.write(f"Best Parameters: {best_params}, Best MAPE: {study.best_value}")
+        # Optimize hyperparameters
+        best_params = optimize_hyperparameters(cleaned_df)
+        st.write(f"Best Hyperparameters: {best_params}")
 
-        # Fit the model with the best parameters
+        # Use the best hyperparameters in the model
         final_df, r2, mape, accuracy = prophet_forecast_model(cleaned_df, forecast_months, best_params)
-
+        
         st.subheader("Forecasted Results")
         st.dataframe(final_df)
 
