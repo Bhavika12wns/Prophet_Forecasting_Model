@@ -87,8 +87,7 @@ def grid_search_optimization(df_cleaned):
         'changepoint_prior_scale': [0.01, 0.1, 0.5],
         'seasonality_mode': ['additive', 'multiplicative'],
         'yearly_seasonality': [True, False],
-        'changepoint_range': [0.8, 0.9, 1.0],
-        'growth': ['logistic', 'linear']
+        'changepoint_range': [0.8, 0.9, 1.0]
     }
 
     best_score = float('inf')
@@ -102,7 +101,7 @@ def grid_search_optimization(df_cleaned):
             seasonality_mode=params['seasonality_mode'],
             changepoint_prior_scale=params['changepoint_prior_scale'],
             changepoint_range=params['changepoint_range'],
-            growth=params['growth']
+            growth='logistic'
         )
         model.add_seasonality(name='quarterly', period=91.25, fourier_order=8)
         model.fit(df_cleaned)
@@ -130,7 +129,6 @@ def optuna_optimization(df_cleaned):
         seasonality_mode = trial.suggest_categorical('seasonality_mode', ['additive', 'multiplicative'])
         yearly_seasonality = trial.suggest_categorical('yearly_seasonality', [True, False])
         changepoint_range = trial.suggest_uniform('changepoint_range', 0.8, 1.0)
-        growth = trial.suggest_categorical('growth', ['linear', 'logistic'])
 
         model = Prophet(
             yearly_seasonality=yearly_seasonality,
@@ -139,7 +137,7 @@ def optuna_optimization(df_cleaned):
             seasonality_mode=seasonality_mode,
             changepoint_prior_scale=changepoint_prior_scale,
             changepoint_range=changepoint_range,
-            growth=growth
+            growth='logistic'
         )
         model.add_seasonality(name='quarterly', period=91.25, fourier_order=8)
         model.fit(df_cleaned)
@@ -187,7 +185,7 @@ def prophet_forecast_model(df_cleaned, forecast_months):
         seasonality_mode=best_params['seasonality_mode'],
         changepoint_prior_scale=best_params['changepoint_prior_scale'],
         changepoint_range=best_params['changepoint_range'],
-        growth=best_params['growth']
+        growth='logistic'
     )
     model.add_seasonality(name='quarterly', period=91.25, fourier_order=8)
     model.fit(df_cleaned)
