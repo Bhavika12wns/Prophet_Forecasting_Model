@@ -140,7 +140,8 @@ if uploaded_file:
         img_data = io.BytesIO()
         plt.savefig(img_data, format='png')
         plt.close()
-        img_data.seek(0)output = io.BytesIO()
+        img_data.seek(0)
+        output = io.BytesIO()
         wb = Workbook()
         ws = wb.active
         ws.title = "Forecast Results"
