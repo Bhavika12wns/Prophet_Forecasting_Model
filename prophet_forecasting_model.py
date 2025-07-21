@@ -28,16 +28,15 @@ import optuna
 
 
 # Load and preprocess data
-# Load and preprocess data
 def load_and_preprocess(file_path):
-    df= pd.read_excel(file_path)
+    df = pd.read_excel(file_path)
     df['month'] = pd.to_datetime(df['month'], format='%b%y')
     df = df[['month', 'sales']]
     df = df.sort_values('month')
     df['sales'] = df['sales'].apply(int)
     df = df.groupby('month').agg({'sales': 'sum'}).reset_index()
     df.rename(columns={'month': 'ds', 'sales': 'y'}, inplace=True)
-    df['y']=df['y'].astype(float)
+    df['y'] = df['y'].astype(float)
     return df
 
 
@@ -46,36 +45,34 @@ def load_and_preprocess(file_path):
 # In[4]:
 
 
-def remove_spikes(df, threshold=5):
-    df_cleaned=df.copy()
-    spikes_replaced=0
-    max_iterations=100
-    iteration=0
+def remove_outliers(df, threshold=5):
+    df_cleaned = df.copy()
+    spikes_replaced = 0
+    max_iterations = 100
+    iteration = 0
 
     while iteration < max_iterations:
-        iteration+=1
-        mean_full=df_cleaned['y'].mean()
+        iteration += 1
+        mean_full = df_cleaned['y'].mean()
         max_val = df_cleaned['y'].max()
         min_val = df_cleaned['y'].min()
         mean_wo_max = df_cleaned[df_cleaned['y'] != max_val]['y'].mean()
         mean_wo_min = df_cleaned[df_cleaned['y'] != min_val]['y'].mean()
-        diff_max = abs(mean_full-mean_wo_max)/mean_full * 100
-        diff_min = abs(mean_full-mean_wo_min)/mean_full * 100
-        
+        diff_max = abs(mean_full - mean_wo_max) / mean_full * 100
+        diff_min = abs(mean_full - mean_wo_min) / mean_full * 100
+
         if diff_max <= threshold and diff_min <= threshold:
             break
 
         if diff_max > diff_min:
             idx_to_replace = df_cleaned[df_cleaned['y'] == max_val].index[0]
             df_cleaned.at[idx_to_replace, 'y'] = mean_wo_max
-        
         else:
-            idx_to_replace = df_cleaned[df_cleaned['y'] ==min_val].index[0]
+            idx_to_replace = df_cleaned[df_cleaned['y'] == min_val].index[0]
             df_cleaned.at[idx_to_replace, 'y'] = mean_wo_min
-        
+
         spikes_replaced += 1
     return df_cleaned
-
 
 # ### Fit the model
 
