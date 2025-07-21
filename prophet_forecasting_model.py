@@ -81,7 +81,15 @@ def remove_spikes(df, threshold=5):
 # In[5]:
 
 
+# Optuna for Prophet
 def objective(trial, df_cleaned):
+    # Ensure the 'ds' column is datetime
+    df_cleaned['ds'] = pd.to_datetime(df_cleaned['ds'])
+    
+    # Check for missing values
+    if df_cleaned.isnull().values.any():
+        raise ValueError("Data contains missing values.")
+    
     seasonality_mode = trial.suggest_categorical('seasonality_mode', ['additive', 'multiplicative'])
     changepoint_prior_scale = trial.suggest_loguniform('changepoint_prior_scale', 0.01, 0.5)
     changepoint_range = trial.suggest_uniform('changepoint_range', 0.8, 0.9)
@@ -153,7 +161,9 @@ def prophet_forecast_model(df_cleaned, forecast_months, best_params):
 
     # Rename and select columns for the final DataFrame
     merged.rename(columns={'y': 'Actual_Sales'}, inplace=True)
-    merged = merged[['ds', 'Actual_Sales', 'Predicted_Sales', 'Type']]# Concatenate the merged and future forecast DataFrames
+    merged = merged[['ds', 'Actual_Sales', 'Predicted_Sales', 'Type']]
+
+    # Concatenate the merged and future forecast DataFrames
     final_df = pd.concat([merged, future_forecast], ignore_index=True)
     
     final_df['MAPE'] = final_df.apply(
