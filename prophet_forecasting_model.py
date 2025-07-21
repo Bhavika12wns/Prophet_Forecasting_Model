@@ -83,58 +83,63 @@ def remove_spikes(df, threshold=5):
 
 # Optuna for Prophet
 def objective(trial, df_cleaned):
-    # Ensure the 'ds' column is datetime
-    df_cleaned['ds'] = pd.to_datetime(df_cleaned['ds'])
-    
-    # Check for missing values
-    if df_cleaned.isnull().values.any():
-        raise ValueError("Data contains missing values.")
-    
+    # Define the hyperparameter search space
+    changepoint_prior_scale = trial.suggest_loguniform('changepoint_prior_scale', 0.001, 0.5)
     seasonality_mode = trial.suggest_categorical('seasonality_mode', ['additive', 'multiplicative'])
-    changepoint_prior_scale = trial.suggest_loguniform('changepoint_prior_scale', 0.01, 0.5)
-    changepoint_range = trial.suggest_uniform('changepoint_range', 0.8, 0.9)
     
+    # Initialize and fit the Prophet model
     model = Prophet(
         yearly_seasonality=True,
         weekly_seasonality=False,
         daily_seasonality=False,
         seasonality_mode=seasonality_mode,
         changepoint_prior_scale=changepoint_prior_scale,
-        changepoint_range=changepoint_range,
+        changepoint_range=0.9,
         growth='logistic'
     )
+    
     model.add_seasonality(name='quarterly', period=91.25, fourier_order=8)
     model.fit(df_cleaned)
     
+    # Create a future DataFrame for forecasting
     future = model.make_future_dataframe(periods=12, freq='MS')
     future['cap'] = df_cleaned['cap'].iloc[-1]
     future['floor'] = df_cleaned['floor'].iloc[-1]
     
+    # Predict future sales
     forecast = model.predict(future)
+    
+    # Calculate MAPE
     forecast_df = forecast[['ds', 'yhat']].copy()
     forecast_df.columns = ['ds', 'Predicted_Sales']
-    
     merged = pd.merge(df_cleaned, forecast_df, on='ds', how='left')
-    mape = mean_absolute_percentage_error(merged['y'], merged['Predicted_Sales'])
+    test_eval = merged.dropna()
+    mape_test = mean_absolute_percentage_error(test_eval['y'], test_eval['Predicted_Sales'])
     
-    return mape
+    return mape_test
+
+
+def optimize_hyperparameters(df_cleaned):
+    study = optuna.create_study(direction='minimize')
+    study.optimize(lambda trial: objective(trial, df_cleaned), n_trials=50)
+    return study.best_params
 
 def prophet_forecast_model(df_cleaned, forecast_months, best_params):
     df_cleaned['cap'] = df_cleaned['y'].quantile(0.95)
     df_cleaned['floor'] = df_cleaned['y'].quantile(0.05)
     
-    # Initialize and fit the Prophet model with the best parameters
+    # Initialize and fit the Prophet model with optimized hyperparameters
     model = Prophet(
         yearly_seasonality=True,
         weekly_seasonality=False,
         daily_seasonality=False,
         seasonality_mode=best_params['seasonality_mode'],
         changepoint_prior_scale=best_params['changepoint_prior_scale'],
-        changepoint_range=best_params['changepoint_range'],
+        changepoint_range=0.9,
         growth='logistic'
     )
+    
     model.add_seasonality(name='quarterly', period=91.25, fourier_order=8)
-
     model.fit(df_cleaned)
 
     # Create a future DataFrame for forecasting
