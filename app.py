@@ -61,18 +61,18 @@ if uploaded_file:
     st.dataframe(df)
 
     st.subheader("Cleaned Data after Spikes Removal")
-    df_cleaned = remove_spikes(df)
-    st.dataframe(df_cleaned)
+    cleaned_df = remove_spikes(df)
+    st.dataframe(cleaned_df)
 
     forecast_months = st.number_input("Enter number of Future Months to Forecast", min_value=1, max_value=36, value=12, step=1)
 
     if st.button("Run Forecast"):
         # Optimize hyperparameters
-        best_params = optimize_hyperparameters(df_cleaned)
+        best_params = optimize_hyperparameters(cleaned_df)
         st.write(f"Best Hyperparameters: {best_params}")
 
         # Use the best hyperparameters in the model
-        final_df, r2, mape, accuracy = prophet_forecast_model(df_cleaned, forecast_months, best_params)
+        final_df, r2, mape, accuracy = prophet_forecast_model(cleaned_df, forecast_months, best_params)
         
         st.subheader("Forecasted Results")
         st.dataframe(final_df)
