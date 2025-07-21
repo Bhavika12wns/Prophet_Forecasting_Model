@@ -141,6 +141,7 @@ if uploaded_file:
         plt.savefig(img_data, format='png')
         plt.close()
         img_data.seek(0)
+
         output = io.BytesIO()
         wb = Workbook()
         ws = wb.active
