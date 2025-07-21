@@ -8,7 +8,7 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 import plotly.express as px
-from prophet_forecasting_model import load_and_preprocess, remove_spikes, prophet_forecast_model, objective
+from prophet_forecasting_model import load_and_preprocess, remove_spikes, prophet_forecast_model, objective, optimize_hyperparameters
 import optuna
 import io
 from openpyxl import Workbook
