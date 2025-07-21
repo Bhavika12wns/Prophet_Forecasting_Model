@@ -8,9 +8,9 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 import plotly.express as px
-from prophet_forecasting_model import load_and_preprocess, remove_spikes, prophet_forecast_model, objective, optimize_hyperparameters
-import optuna
+from prophet_forecasting_model import load_and_preprocess, remove_spikes, prophet_forecast_model
 import io
+import openpyxl
 from openpyxl import Workbook
 from openpyxl.utils.dataframe import dataframe_to_rows
 from openpyxl.drawing.image import Image as XLImage
@@ -55,7 +55,7 @@ uploaded_file = st.file_uploader("Upload your Excel File", type=["xlsx"])
 
 if uploaded_file:
     st.success("File uploaded successfully")
-    
+
     df = load_and_preprocess(uploaded_file)
     st.subheader("Raw Data")
     st.dataframe(df)
@@ -67,13 +67,11 @@ if uploaded_file:
     forecast_months = st.number_input("Enter number of Future Months to Forecast", min_value=1, max_value=36, value=12, step=1)
 
     if st.button("Run Forecast"):
-        # Optimize hyperparameters
-        best_params = optimize_hyperparameters(cleaned_df)
-        st.write(f"Best Hyperparameters: {best_params}")
+        final_df, r2, mape, accuracy = prophet_forecast_model(cleaned_df, forecast_months)
 
-        # Use the best hyperparameters in the model
-        final_df, r2, mape, accuracy = prophet_forecast_model(cleaned_df, forecast_months, best_params)
-        
+        final_df['ds_label'] = final_df['ds'].dt.strftime('%b %Y')
+        final_df = final_df[['ds', 'Actual_Sales', 'Predicted_Sales', 'Type']]
+
         st.subheader("Forecasted Results")
         st.dataframe(final_df)
 
@@ -152,7 +150,6 @@ if uploaded_file:
 
         wb.save(output)
         output.seek(0)
-
         st.download_button(
             label="Download Excel File of the Forecasted Sales",
             data=output,
