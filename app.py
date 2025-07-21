@@ -56,19 +56,6 @@ uploaded_file = st.file_uploader("Upload your Excel File", type=["xlsx"])
 if uploaded_file:
     st.success("File uploaded successfully")
 
-    df = load_and_preprocess(uploaded_file)
-    st.subheader("Raw Data")
-    st.dataframe(df)
-
-    st.subheader("Cleaned Data after Spikes Removal")
-    cleaned_df = remove_spikes(df)
-    st.dataframe(cleaned_df)
-
-    forecast_months = st.number_input("Enter number of Future Months to Forecast", min_value=1, max_value=36, value=12, step=1)
-
-    if uploaded_file:
-    st.success("File uploaded successfully")
-
     # Load and preprocess data
     df = load_and_preprocess(uploaded_file)
     st.subheader("Raw Data")
@@ -105,7 +92,6 @@ if uploaded_file:
         final_df['Type'] = final_df['Type'].replace({
             'Actual': 'Prediction on Actual Sales',
             'Forecast': 'Forecasted Sales'})
-
         fig_plotly = px.line(
             final_df,
             x='ds',
