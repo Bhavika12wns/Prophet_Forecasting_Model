@@ -87,7 +87,10 @@ def grid_search_optimization(df_cleaned):
         'changepoint_prior_scale': [0.01, 0.1, 0.5],
         'seasonality_mode': ['additive', 'multiplicative'],
         'yearly_seasonality': [True, False],
-        'changepoint_range': [0.8, 0.9, 1.0]
+        'weekly_seasonality': [True, False],
+        'holidays_prior_scale': [0.01, 0.1, 1.0],
+        'changepoint_range': [0.8, 0.9, 1.0],
+        'growth': ['logistic', 'linear']
     }
 
     best_score = float('inf')
@@ -96,12 +99,13 @@ def grid_search_optimization(df_cleaned):
     for params in ParameterGrid(param_grid):
         model = Prophet(
             yearly_seasonality=params['yearly_seasonality'],
-            weekly_seasonality=False,
+            weekly_seasonality=params['weekly_seasonality'],
             daily_seasonality=False,
             seasonality_mode=params['seasonality_mode'],
             changepoint_prior_scale=params['changepoint_prior_scale'],
+            holidays_prior_scale=params['holidays_prior_scale'],
             changepoint_range=params['changepoint_range'],
-            growth='logistic'
+            growth=params['growth']
         )
         model.add_seasonality(name='quarterly', period=91.25, fourier_order=8)
         model.fit(df_cleaned)
@@ -128,16 +132,20 @@ def optuna_optimization(df_cleaned):
         changepoint_prior_scale = trial.suggest_loguniform('changepoint_prior_scale', 0.01, 0.5)
         seasonality_mode = trial.suggest_categorical('seasonality_mode', ['additive', 'multiplicative'])
         yearly_seasonality = trial.suggest_categorical('yearly_seasonality', [True, False])
+        weekly_seasonality = trial.suggest_categorical('weekly_seasonality', [True, False])
+        holidays_prior_scale = trial.suggest_loguniform('holidays_prior_scale', 0.01, 1.0)
         changepoint_range = trial.suggest_uniform('changepoint_range', 0.8, 1.0)
+        growth = trial.suggest_categorical('growth', ['logistic', 'linear'])
 
         model = Prophet(
             yearly_seasonality=yearly_seasonality,
-            weekly_seasonality=False,
+            weekly_seasonality=weekly_seasonality,
             daily_seasonality=False,
             seasonality_mode=seasonality_mode,
             changepoint_prior_scale=changepoint_prior_scale,
+            holidays_prior_scale=holidays_prior_scale,
             changepoint_range=changepoint_range,
-            growth='logistic'
+            growth=growth
         )
         model.add_seasonality(name='quarterly', period=91.25, fourier_order=8)
         model.fit(df_cleaned)
@@ -168,8 +176,10 @@ def choose_optimizer(df_cleaned):
         return 'optuna'
 
 def prophet_forecast_model(df_cleaned, forecast_months):
-    df_cleaned['cap'] = df_cleaned['y'].quantile(0.95)
-    df_cleaned['floor'] = df_cleaned['y'].quantile(0.05)
+    # Set capacity values
+    cap_value = df_cleaned['y'].max() * 1.1  # Example: 10% above the max value
+    df_cleaned['cap'] = cap_value
+    df_cleaned['floor'] = df_cleaned['y'].min() * 0.9  # Example: 10% below the min value
 
     optimizer = choose_optimizer(df_cleaned)
 
@@ -180,19 +190,22 @@ def prophet_forecast_model(df_cleaned, forecast_months):
 
     model = Prophet(
         yearly_seasonality=best_params['yearly_seasonality'],
-        weekly_seasonality=False,
+        weekly_seasonality=best_params['weekly_seasonality'],
         daily_seasonality=False,
         seasonality_mode=best_params['seasonality_mode'],
         changepoint_prior_scale=best_params['changepoint_prior_scale'],
+        holidays_prior_scale=best_params['holidays_prior_scale'],
         changepoint_range=best_params['changepoint_range'],
-        growth='logistic'
+        growth=best_params['growth']
     )
     model.add_seasonality(name='quarterly', period=91.25, fourier_order=8)
     model.fit(df_cleaned)
 
+    # Create future dataframe
     future = model.make_future_dataframe(periods=forecast_months, freq='MS')
-    future['cap'] = df_cleaned['cap'].iloc[-1]
+    future['cap'] = cap_value
     future['floor'] = df_cleaned['floor'].iloc[-1]
+
     forecast = model.predict(future)
 
     forecast_df = forecast[['ds', 'yhat']].copy()
