@@ -8,7 +8,7 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 import plotly.express as px
-from prophet_forecasting_model import load_and_preprocess, remove_outliers, prophet_forecast_model
+from prophet_forecasting_model import load_and_preprocess, remove_spikes, prophet_forecast_model
 import io
 import openpyxl
 from openpyxl import Workbook
@@ -63,7 +63,7 @@ if uploaded_file:
 
     # Remove spikes from data
     st.subheader("Cleaned Data")
-    cleaned_df = remove_outliers(df)
+    cleaned_df = remove_spikes(df)
     st.dataframe(cleaned_df)
 
     # Forecast months input
@@ -74,7 +74,9 @@ if uploaded_file:
         final_df, r2, mape, accuracy = prophet_forecast_model(cleaned_df, forecast_months)
 
         final_df['ds_label'] = final_df['ds'].dt.strftime('%b %Y')
-        final_df = final_df[['ds', 'Actual_Sales', 'Predicted_Sales', 'Type']]# Display forecasted results
+        final_df = final_df[['ds', 'Actual_Sales', 'Predicted_Sales', 'Type']]
+
+        # Display forecasted results
         st.subheader("Forecasted Results")
         st.dataframe(final_df)
 
@@ -137,11 +139,13 @@ if uploaded_file:
         ax.grid(True)
         plt.tight_layout()
 
+        # Save plot to image
         img_data = io.BytesIO()
         plt.savefig(img_data, format='png')
         plt.close()
         img_data.seek(0)
 
+        # Prepare Excel output
         output = io.BytesIO()
         wb = Workbook()
         ws = wb.active
@@ -154,6 +158,8 @@ if uploaded_file:
 
         wb.save(output)
         output.seek(0)
+
+        # Download forecast results
         st.download_button(
             label="Download Excel File of the Forecasted Sales",
             data=output,
