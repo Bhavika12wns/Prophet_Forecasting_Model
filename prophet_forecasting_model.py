@@ -73,7 +73,7 @@ def remove_spikes(df, threshold=5):
 
         spikes_replaced += 1
     return df_cleaned
-
+    
 # ### Fit the model
 
 # In[5]:
@@ -139,7 +139,8 @@ def optuna_optimization(df_cleaned):
 
         future = model.make_future_dataframe(periods=12, freq='MS')
         future['cap'] = df_cleaned['cap'].iloc[-1]
-        future['floor'] = df_cleaned['floor'].iloc[-1]forecast = model.predict(future)
+        future['floor'] = df_cleaned['floor'].iloc[-1]
+        forecast = model.predict(future)
         forecast_df = forecast[['ds', 'yhat']].copy()
         forecast_df.columns = ['ds', 'Predicted_Sales']
         merged = pd.merge(df_cleaned, forecast_df, on='ds', how='left')
@@ -158,7 +159,7 @@ def choose_optimizer(df_cleaned):
     if len(df_cleaned) < 50:
         return 'grid_search'
     else:
-        return '******'
+        return 'optuna'
 
 def prophet_forecast_model(df_cleaned, forecast_months):
     df_cleaned['cap'] = df_cleaned['y'].quantile(0.95)
