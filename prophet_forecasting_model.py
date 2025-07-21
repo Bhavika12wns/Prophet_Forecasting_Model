@@ -45,7 +45,7 @@ def load_and_preprocess(file_path):
 # In[4]:
 
 
-def remove_outliers(df, threshold=5):
+def remove_spikes(df, threshold=5):
     df_cleaned = df.copy()
     spikes_replaced = 0
     max_iterations = 100
