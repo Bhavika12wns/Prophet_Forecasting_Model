@@ -186,8 +186,8 @@ def prophet_forecast_model(df_cleaned, forecast_months):
         daily_seasonality=False,
         seasonality_mode=best_params['seasonality_mode'],
         changepoint_prior_scale=best_params['changepoint_prior_scale'],
-        changepoint_range=['changepoint_range'],
-        growth=['growth']
+        changepoint_range=best_params['changepoint_range'],
+        growth=best_params['growth']
     )
     model.add_seasonality(name='quarterly', period=91.25, fourier_order=8)
     model.fit(df_cleaned)
