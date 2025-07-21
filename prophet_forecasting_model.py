@@ -86,7 +86,9 @@ def grid_search_optimization(df_cleaned):
     param_grid = {
         'changepoint_prior_scale': [0.01, 0.1, 0.5],
         'seasonality_mode': ['additive', 'multiplicative'],
-        'yearly_seasonality': [True, False]
+        'yearly_seasonality': [True, False],
+        'changepoint_range': [0.8, 0.9, 1.0],
+        'growth': ['logistic', 'linear']
     }
 
     best_score = float('inf')
@@ -99,8 +101,8 @@ def grid_search_optimization(df_cleaned):
             daily_seasonality=False,
             seasonality_mode=params['seasonality_mode'],
             changepoint_prior_scale=params['changepoint_prior_scale'],
-            changepoint_range=0.9,
-            growth='logistic'
+            changepoint_range=params['changepoint_range'],
+            growth=params['growth']
         )
         model.add_seasonality(name='quarterly', period=91.25, fourier_order=8)
         model.fit(df_cleaned)
@@ -127,6 +129,8 @@ def optuna_optimization(df_cleaned):
         changepoint_prior_scale = trial.suggest_loguniform('changepoint_prior_scale', 0.01, 0.5)
         seasonality_mode = trial.suggest_categorical('seasonality_mode', ['additive', 'multiplicative'])
         yearly_seasonality = trial.suggest_categorical('yearly_seasonality', [True, False])
+        changepoint_range = trial.suggest_uniform('changepoint_range', 0.8, 1.0)
+        growth = trial.suggest_categorical('growth', ['linear', 'logistic'])
 
         model = Prophet(
             yearly_seasonality=yearly_seasonality,
@@ -134,8 +138,8 @@ def optuna_optimization(df_cleaned):
             daily_seasonality=False,
             seasonality_mode=seasonality_mode,
             changepoint_prior_scale=changepoint_prior_scale,
-            changepoint_range=0.9,
-            growth='logistic'
+            changepoint_range=changepoint_range,
+            growth=growth
         )
         model.add_seasonality(name='quarterly', period=91.25, fourier_order=8)
         model.fit(df_cleaned)
@@ -182,8 +186,8 @@ def prophet_forecast_model(df_cleaned, forecast_months):
         daily_seasonality=False,
         seasonality_mode=best_params['seasonality_mode'],
         changepoint_prior_scale=best_params['changepoint_prior_scale'],
-        changepoint_range=0.9,
-        growth='logistic'
+        changepoint_range=['changepoint_range'],
+        growth=['growth']
     )
     model.add_seasonality(name='quarterly', period=91.25, fourier_order=8)
     model.fit(df_cleaned)
