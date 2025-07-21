@@ -8,7 +8,7 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 import plotly.express as px
-from prophet_forecasting_model import load_and_preprocess, remove_spikes, prophet_forecast_model
+from prophet_forecasting_model import load_and_preprocess, remove_outliers, prophet_forecast_model
 import io
 import openpyxl
 from openpyxl import Workbook
@@ -20,7 +20,7 @@ from openpyxl.drawing.image import Image as XLImage
 
 template_df = pd.DataFrame({
     "month": ["Jan22", "Feb22", "Mar22"],
-    "sales": [1234,12344,12343]
+    "sales": [1234, 12344, 12343]
 })
 
 st.markdown("### Download Template File")
@@ -62,8 +62,8 @@ if uploaded_file:
     st.dataframe(df)
 
     # Remove spikes from data
-    st.subheader("Cleaned Data after Spikes Removal")
-    cleaned_df = remove_spikes(df)
+    st.subheader("Cleaned Data")
+    cleaned_df = remove_outliers(df)
     st.dataframe(cleaned_df)
 
     # Forecast months input
@@ -74,9 +74,7 @@ if uploaded_file:
         final_df, r2, mape, accuracy = prophet_forecast_model(cleaned_df, forecast_months)
 
         final_df['ds_label'] = final_df['ds'].dt.strftime('%b %Y')
-        final_df = final_df[['ds', 'Actual_Sales', 'Predicted_Sales', 'Type']]
-
-        # Display forecasted results
+        final_df = final_df[['ds', 'Actual_Sales', 'Predicted_Sales', 'Type']]# Display forecasted results
         st.subheader("Forecasted Results")
         st.dataframe(final_df)
 
@@ -92,6 +90,7 @@ if uploaded_file:
         final_df['Type'] = final_df['Type'].replace({
             'Actual': 'Prediction on Actual Sales',
             'Forecast': 'Forecasted Sales'})
+
         fig_plotly = px.line(
             final_df,
             x='ds',
@@ -117,14 +116,13 @@ if uploaded_file:
         )
         st.plotly_chart(fig_plotly, use_container_width=True)
 
+        # Matplotlib plot
         fig, ax = plt.subplots(figsize=(14, 6))
         final_df_sorted = final_df.sort_values("ds")
 
-        # Plot Actual Sales once (red line with legend)
         actual = final_df_sorted[final_df_sorted['Type'] == 'Actual']
         ax.plot(actual['ds'], actual['Actual_Sales'], linestyle='--', color='red', label='Actual Sales')
 
-        # Plot the rest inside the loop
         for label, grp in final_df_sorted.groupby('Type'):
             ax.plot(grp['ds'], grp['Predicted_Sales'], linestyle='--', label=f'{label}')
             if label != 'Forecast':
