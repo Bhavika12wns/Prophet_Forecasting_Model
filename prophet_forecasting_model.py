@@ -81,7 +81,7 @@ def remove_spikes(df, threshold=5):
 
 def grid_search_optimization(df_cleaned):
     param_grid = {
-        'changepoint_prior_scale': [0.01, 0.1, 0.5],
+        'changepoint_prior_scale': [0.01, 0.05, 0.1, 0.5],
         'seasonality_mode': ['additive', 'multiplicative'],
         'yearly_seasonality': [True, False]
     }
@@ -96,7 +96,7 @@ def grid_search_optimization(df_cleaned):
             daily_seasonality=False,
             seasonality_mode=params['seasonality_mode'],
             changepoint_prior_scale=params['changepoint_prior_scale'],
-            changepoint_range=0.9,
+            changepoint_range=0.8,
             growth='logistic'
         )
         model.add_seasonality(name='quarterly', period=91.25, fourier_order=8)
@@ -121,7 +121,7 @@ def grid_search_optimization(df_cleaned):
 
 def optuna_optimization(df_cleaned):
     def objective(trial):
-        changepoint_prior_scale = trial.suggest_loguniform('changepoint_prior_scale', 0.01, 0.5)
+        changepoint_prior_scale = trial.suggest_loguniform('changepoint_prior_scale', 0.01, 0.05, 0.1, 0.5)
         seasonality_mode = trial.suggest_categorical('seasonality_mode', ['additive', 'multiplicative'])
         yearly_seasonality = trial.suggest_categorical('yearly_seasonality', [True, False])
 
@@ -131,7 +131,7 @@ def optuna_optimization(df_cleaned):
             daily_seasonality=False,
             seasonality_mode=seasonality_mode,
             changepoint_prior_scale=changepoint_prior_scale,
-            changepoint_range=0.9,
+            changepoint_range=0.8,
             growth='logistic'
         )
         model.add_seasonality(name='quarterly', period=91.25, fourier_order=8)
@@ -165,24 +165,33 @@ def prophet_forecast_model(df_cleaned, forecast_months):
     df_cleaned['cap'] = df_cleaned['y'].quantile(0.95)
     df_cleaned['floor'] = df_cleaned['y'].quantile(0.05)
 
-    optimizer = choose_optimizer(df_cleaned)
+    if len(df_cleaned) < 36:
+        model = Prophet(yearly_seasonality = True,
+                        weekly_seasonality = False,
+                       daily_seasonality = False,
+                       seasonality_mode='additive',
+                       growth='logistic')
+        model.fit(df_cleaned)
 
-    if optimizer == 'grid_search':
-        best_params = grid_search_optimization(df_cleaned)
     else:
-        best_params = optuna_optimization(df_cleaned)
+        optimizer = choose_optimizer(df_cleaned)
 
-    model = Prophet(
-        yearly_seasonality=best_params['yearly_seasonality'],
-        weekly_seasonality=False,
-        daily_seasonality=False,
-        seasonality_mode=best_params['seasonality_mode'],
-        changepoint_prior_scale=best_params['changepoint_prior_scale'],
-        changepoint_range=0.9,
-        growth='logistic'
-    )
-    model.add_seasonality(name='quarterly', period=91.25, fourier_order=8)
-    model.fit(df_cleaned)
+        if optimizer == 'grid_search':
+            best_params = grid_search_optimization(df_cleaned)
+        else:
+            best_params = optuna_optimization(df_cleaned)
+
+        model = Prophet(
+            yearly_seasonality=best_params['yearly_seasonality'],
+            weekly_seasonality=False,
+            daily_seasonality=False,
+            seasonality_mode=best_params['seasonality_mode'],
+            changepoint_prior_scale=best_params['changepoint_prior_scale'],
+            changepoint_range=0.9,
+            growth='logistic'
+        )
+        model.add_seasonality(name='quarterly', period=91.25, fourier_order=8)
+        model.fit(df_cleaned)
 
     future = model.make_future_dataframe(periods=forecast_months, freq='MS')
     future['cap'] = df_cleaned['cap'].iloc[-1]
